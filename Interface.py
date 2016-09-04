@@ -186,7 +186,7 @@ class MainWindow:
             self.operations.new_image = Image.open(str(self.file))
             self.operations.new_image_pixels = self.operations.new_image.load()
 
-            self.operations.left_turn()
+            self.operations.convolution()
 
             # Updating the Image object with the new data
             self.operations.image = self.operations.new_image

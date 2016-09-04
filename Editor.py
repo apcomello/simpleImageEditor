@@ -165,7 +165,27 @@ class Editor:
                 y = abs(self.image.size[0] -1 - i)
                 self.new_image_pixels[x,y] = self.image_pixels[i, n]
 
-
+    def convolution(self):
+        conv_matrix = [[0, -1, 0], [-1, 4, -1], [0, -1, 0]]
+        
+        for i in range(1, self.image.size[0] -1):
+            for n in range(1, self.image.size[1]-1):
+                A_i = conv_matrix[2][2] * self.image_pixels[i-1,n-1][0]
+                B_h = conv_matrix[2][1] * self.image_pixels[i-1, n][0]
+                C_g = conv_matrix[2][0] * self.image_pixels[i-1, n+1][0]
+                D_f = conv_matrix [1][2] * self.image_pixels[i, n-1][0]
+                E_e = conv_matrix[1][1] * self.image_pixels[i, n][0]
+                F_d = conv_matrix[1][0] * self.image_pixels[i, n+1][0]
+                G_c = conv_matrix[0][2] * self.image_pixels[i+1, n-1][0]
+                H_b = conv_matrix[0][1] * self.image_pixels[i+1, n][0]
+                I_a = conv_matrix[0][0] * self.image_pixels[i+1, n+1][0]
+                conv_result =  A_i + B_h + C_g + D_f + E_e + F_d + G_c + H_b + I_a
+                if conv_result < 0:
+                    conv_result = 0
+                if conv_result > 255:
+                    conv_result = 255
+                self.new_image_pixels[i,n] = (conv_result, conv_result, conv_result)
+                
 class ImageDisplay:
     
     def __init__(self):
