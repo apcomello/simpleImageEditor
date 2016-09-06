@@ -165,9 +165,7 @@ class Editor:
                 y = abs(self.image.size[0] -1 - i)
                 self.new_image_pixels[x,y] = self.image_pixels[i, n]
 
-    def convolution(self):
-        conv_matrix = [[0, -1, 0], [-1, 4, -1], [0, -1, 0]]
-        
+    def convolution(self, conv_matrix):        
         for i in range(1, self.image.size[0] -1):
             for n in range(1, self.image.size[1]-1):
                 A_i = conv_matrix[2][2] * self.image_pixels[i-1,n-1][0]
@@ -185,21 +183,5 @@ class Editor:
                 if conv_result > 255:
                     conv_result = 255
                 self.new_image_pixels[i,n] = (conv_result, conv_result, conv_result)
-                
-class ImageDisplay:
-    
-    def __init__(self):
-        self.w = QtGui.QWidget()
-        self.b = QtGui.QLabel(self.w)
-        self.app = QtGui.QApplication(sys.argv)
-    
-    def display_image(self, image):
-        label = QtGui.QLabel(self.w)
-        pixmap = QtGui.QPixmap.fromImage(image)
-        pixmap.detach()
-        label.setPixmap(pixmap)
-        self.w.resize(pixmap.width(), pixmap.height())
-        self.w.show()
-        sys.exit(self.app.exec_())
- 
+                 
  

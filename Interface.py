@@ -1,11 +1,14 @@
 from PyQt4 import QtGui
 from PIL import Image, ImageQt
 import Editor
+import sys
 
 class MainWindow:
 
     def __init__(self):
+        self.main = QtGui.QMainWindow()
         self.w = QtGui.QWidget()
+        self.main.setCentralWidget(self.w)
         self.b = QtGui.QLabel(self.w)
         self.original = None
         self.image = None
@@ -22,39 +25,62 @@ class MainWindow:
 
     def create_main_window(self):
         
+        menu = self.main.menuBar()
+        
+        file = menu.addMenu("File")
+        file.addAction("Load image")
+        file.addAction("Save image")
+        
+        rotation = menu.addMenu("Rotations")
+        rotation.addAction("Rotate clockwise")
+        rotation.addAction("Rotate counter-clockwise")
+        rotation.addAction("Flip horizontally")
+        rotation.addAction("Flip vertically")
+        
+        transformations = menu.addMenu("Transformations")
+        transformations.addAction("Add filter")
+        transformations.addAction("Negative")
+        transformations.addAction("Grayscale")
+        transformations.addAction("Quantization")
+        
+        histogram = menu.addMenu("Histogram operations")
+        histogram.addAction("Show histogram")
+        histogram.addAction("Equalize histogram")
+        histogram.addAction("Apply equilized histogram")
+        
         # Creation and positioning of all the button needed
-        self.button_open = QtGui.QPushButton("Open image", self.w)
-        self.button_open.clicked.connect(self.load_file)
-        self.button_open.move(10, self.middle_y -75)       
+        # self.button_open = QtGui.QPushButton("Open image", self.w)
+        # self.button_open.clicked.connect(self.load_file)
+        # self.button_open.move(10, self.middle_y -75)       
         
-        self.button_horizontal = QtGui.QPushButton("Horizontal flip", self.w)
-        self.button_horizontal.clicked.connect(self.display_horizontal_turn)
-        self.button_horizontal.move(10, self.middle_y -45)
+        # self.button_horizontal = QtGui.QPushButton("Horizontal flip", self.w)
+        # self.button_horizontal.clicked.connect(self.display_horizontal_turn)
+        # self.button_horizontal.move(10, self.middle_y -45)
         
-        self.button_vertical = QtGui.QPushButton("Vertical flip", self.w)
-        self.button_vertical.clicked.connect(self.display_vertical_turn)
-        self.button_vertical.move(10, self.middle_y -15)
+        # self.button_vertical = QtGui.QPushButton("Vertical flip", self.w)
+        # self.button_vertical.clicked.connect(self.display_vertical_turn)
+        # self.button_vertical.move(10, self.middle_y -15)
         
-        self.button_gray = QtGui.QPushButton("Grayscale", self.w)
-        self.button_gray.clicked.connect(self.display_grayed_image)
-        self.button_gray.move(10, self.middle_y + 15)
+        # self.button_gray = QtGui.QPushButton("Grayscale", self.w)
+        # self.button_gray.clicked.connect(self.display_grayed_image)
+        # self.button_gray.move(10, self.middle_y + 15)
         
-        self.button_quantization = QtGui.QPushButton("Quantization", self.w)
-        self.button_quantization.clicked.connect(self.display_quantized_image)
-        self.button_quantization.move(10, self.middle_y + 45)
+        # self.button_quantization = QtGui.QPushButton("Quantization", self.w)
+        # self.button_quantization.clicked.connect(self.display_quantized_image)
+        # self.button_quantization.move(10, self.middle_y + 45)
                 
-        self.button_save = QtGui.QPushButton("Save image", self.w)
-        self.button_save.clicked.connect(self.save_file)
-        self.button_save.move(10, self.middle_y + 75)
+        # self.button_save = QtGui.QPushButton("Save image", self.w)
+        # self.button_save.clicked.connect(self.save_file)
+        # self.button_save.move(10, self.middle_y + 75)
 
         self.info_label = QtGui.QLabel(self.w)
         self.info_label.setText("Ana Paula Mello - 260723")
-        self.info_label.move (370, 480)
+        self.info_label.move (360, 470)
       
-        self.w.resize(500, 500)
-        self.w.move(100, 100)
-        self.w.setWindowTitle("Image Operations")
-        self.w.show()
+        self.main.resize(500, 510)
+        self.main.move(100, 100)
+        self.main.setWindowTitle("Image Operations")
+        self.main.show()
             
     def load_file(self):
     
@@ -151,8 +177,8 @@ class MainWindow:
         label_image.setPixmap(self.pixmap_image)
         label_image.show()
         
-        self.w.resize(2*self.operations.image.size[0]+160, self.operations.image.size[1]+60)
-        self.w.show()
+        self.main.resize(2*self.operations.image.size[0]+160, self.operations.image.size[1]+80)
+        self.main.show()
         
     def display_horizontal_turn(self):
     
@@ -185,8 +211,10 @@ class MainWindow:
             # New Image objects to be updated
             self.operations.new_image = Image.open(str(self.file))
             self.operations.new_image_pixels = self.operations.new_image.load()
-
-            self.operations.convolution()
+            
+            new_window = ImageDisplay()
+            new_window.display_image()
+            # self.operations.convolution()
 
             # Updating the Image object with the new data
             self.operations.image = self.operations.new_image
@@ -245,3 +273,19 @@ class MainWindow:
                 new = ImageQt.ImageQt(self.operations.image)
                 self.show_image(new, self.original)
         
+
+class ImageDisplay:
+    
+    def __init__(self):
+        self.w = QtGui.QDialog()
+        self.b = QtGui.QLabel(self.w)
+    
+    def display_image(self):
+        label = QtGui.QLabel(self.w)
+        label.setText("Hello, world")
+        # pixmap = QtGui.QPixmap.fromImage(image)
+        # pixmap.detach()
+        # label.setPixmap(pixmap)
+        # self.w.resize(pixmap.width(), pixmap.height())
+        self.w.resize(100, 100)
+        self.w.exec_()
