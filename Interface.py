@@ -22,31 +22,73 @@ class MainWindow:
         self.previous_image = None
         self.file = None
         self.gray_flag = False
+        self.label_original = QtGui.QLabel(self.w)
+        self.label_image = QtGui.QLabel(self.w)
+        self.original_label = QtGui.QLabel(self.w)
+        self.modified_label = QtGui.QLabel(self.w)
+        self.original_label.setText("Original image")
+        self.modified_label.setText("Modified image")
+
 
     def create_main_window(self):
         
         menu = self.main.menuBar()
         
-        file = menu.addMenu("File")
-        file.addAction("Load image")
-        file.addAction("Save image")
+        load_action = QtGui.QAction("Load image", menu)
+        load_action.triggered.connect(self.load_file)
         
+        save_action =  QtGui.QAction("Save image", menu)
+        save_action.triggered.connect(self.save_file)
+        
+        file = menu.addMenu("File")
+        file.addAction(load_action)
+        file.addAction(save_action)
+        
+        rotation_clockwise_action = QtGui.QAction("Rotate clockwise", menu)
+        rotation_clockwise_action.triggered.connect(self._rotate_clockwise)
+        
+        rotation_counter_clockwise_action = QtGui.QAction("Rotate counter-clockwise", menu)
+        rotation_counter_clockwise_action.triggered.connect(self._rotate_counter_clockwise)
+
+        flip_horizontally_action = QtGui.QAction("Flip horizontally", menu)
+        flip_horizontally_action.triggered.connect(self._horizontal_flip)
+        
+        flip_vertically_action = QtGui.QAction("Flip vertically", menu)
+        flip_vertically_action.triggered.connect(self._vertical_flip)
+
         rotation = menu.addMenu("Rotations")
-        rotation.addAction("Rotate clockwise")
-        rotation.addAction("Rotate counter-clockwise")
-        rotation.addAction("Flip horizontally")
-        rotation.addAction("Flip vertically")
+        rotation.addAction(rotation_clockwise_action)
+        rotation.addAction(rotation_counter_clockwise_action)
+        rotation.addAction(flip_horizontally_action)
+        rotation.addAction(flip_vertically_action)
+        
+        add_filter_action = QtGui.QAction("Add filter", menu)
+        add_filter_action.triggered.connect(self._add_filter)
+        
+        negative_action = QtGui.QAction("Negative", menu)
+        negative_action.triggered.connect(self._negative)
+        
+        grayscale_action = QtGui.QAction("Grayscale", menu)
+        grayscale_action.triggered.connect(self._grayscale)
+        
+        quantization_action = QtGui.QAction("Quantization", menu)
+        quantization_action.triggered.connect(self._quantization)
         
         transformations = menu.addMenu("Transformations")
-        transformations.addAction("Add filter")
-        transformations.addAction("Negative")
-        transformations.addAction("Grayscale")
-        transformations.addAction("Quantization")
+        transformations.addAction(add_filter_action)
+        transformations.addAction(negative_action)
+        transformations.addAction(grayscale_action)
+        transformations.addAction(quantization_action)
+        
+        show_histogram_action = QtGui.QAction("Show histogram", menu)
+        show_histogram_action.triggered.connect(self._histogram)
+        
+        equalize_histogram_action = QtGui.QAction("Equalize histogram", menu)
+        equalize_histogram_action.triggered.connect(self._equalize_histogram)
         
         histogram = menu.addMenu("Histogram operations")
-        histogram.addAction("Show histogram")
-        histogram.addAction("Equalize histogram")
-        histogram.addAction("Apply equilized histogram")
+        histogram.addAction(show_histogram_action)
+        histogram.addAction(equalize_histogram_action)
         
         # Creation and positioning of all the button needed
         # self.button_open = QtGui.QPushButton("Open image", self.w)
@@ -89,26 +131,28 @@ class MainWindow:
         if len(self.file) != 0:
        
             self.operations.image = Image.open(str(self.file))
+            self.operations.new_image = Image.open(str(self.file))
             self.operations.image_pixels = self.operations.image.load()
+            self.operations.new_image_pixels = self.operations.new_image.load()
                             
             self.qim = ImageQt.ImageQt(self.operations.image)
             self.original = ImageQt.ImageQt(self.operations.image)
           
-            self.show_image(self.qim, self.original)
+            self._show_image(self.qim, self.original)
             
-            self.middle_y = ((self.operations.image.size[1] + 60) / 2) - 25
             
-            # Updates the buttons location to keep them "in the middle"
-            self.button_open.move(10, self.middle_y -75)       
-            self.button_horizontal.move(10, self.middle_y -45)
-            self.button_vertical.move(10, self.middle_y -15)
-            self.button_gray.move(10, self.middle_y + 15)
-            self.button_quantization.move(10, self.middle_y + 45)
-            self.button_save.move(10, self.middle_y + 75)
-            self.info_label.move (2*self.operations.image.size[0]+30, self.operations.image.size[1]+40)
-        self.operations.make_histogram()
-        print self.operations.histogram
+            # # Updates the buttons location to keep them "in the middle"
+            # self.button_open.move(10, self.middle_y -75)       
+            # self.button_horizontal.move(10, self.middle_y -45)
+            # self.button_vertical.move(10, self.middle_y -15)
+            # self.button_gray.move(10, self.middle_y + 15)
+            # self.button_quantization.move(10, self.middle_y + 45)
+            # self.button_save.move(10, self.middle_y + 75)
+            # self.info_label.move (2*self.operations.image.size[0]+30, self.operations.image.size[1]+40)
+        # self.operations.make_histogram()
+        # print self.operations.histogram
         
+
     def save_file(self):
         if self.file == None or len(self.file) == 0:
             warning = QtGui.QMessageBox()
@@ -119,68 +163,43 @@ class MainWindow:
             self.file = QtGui.QFileDialog.getSaveFileName(self.w, "Save file", "image.jpg", filter="jpg (*.jpg *.)")
             self.operations.image.save(str(self.file))
         
-    def show_image(self, image, original):
+    def _show_image(self, image, original):
     
-        if self.previous_image != None:
-            previous = ImageQt.ImageQt(self.previous_image)
-            clean_up_label = QtGui.QLabel(self.w)
-
-            clean_up_original = QtGui.QPixmap().fromImage(previous)
-            clean_up_original.detach()
-            clean_up_original.fill(QtGui.QColor(240, 240, 240))
-            
-            clean_up_label.setPixmap(clean_up_original)
-            clean_up_label.move(100, 30)
-            clean_up_label.show()
-            
-            clean_up_label_changed = QtGui.QLabel(self.w)
-
-            clean_up_image = QtGui.QPixmap().fromImage(previous)
-            clean_up_image.detach()
-            clean_up_image.fill(QtGui.QColor(240, 240, 240))
-            
-            clean_up_label_changed.setPixmap(clean_up_image)
-            clean_up_label_changed.move(self.previous_image.size[0] + 130, 30)
-            clean_up_label_changed.show()
-
-
-        self.previous_image = self.operations.image
-        self.pixmap_original =  QtGui.QPixmap().fromImage(original)
+        self.pixmap_original =  QtGui.QPixmap.fromImage(original)
         self.pixmap_original.detach()
 
         self.pixmap_image = QtGui.QPixmap.fromImage(image)
         self.pixmap_image.detach()
+        self.label_image.clear()
 
-    
-        label_original = QtGui.QLabel(self.w)
-        label_original.setPixmap(self.pixmap_original)
-        label_original.move(100, 30)
-        label_original.show()
+        self.label_original.setPixmap(self.pixmap_original)
+        self.label_original.move(30, 30)
+        self.label_original.resize(self.operations.image.size[0], self.operations.image.size[1])
+        self.label_original.show()
         
-
-        label_image = QtGui.QLabel(self.w)
-        label_image.clear()
-        
-        self.original_label = QtGui.QLabel(self.w)
-        self.original_label.setText("Original image")
-        self.original_label.move(130, 10)
+        self.original_label.move(30, 10)
         self.original_label.show()
         
-        self.modified_label = QtGui.QLabel(self.w)
-        self.modified_label.setText("Modified image")
-        self.modified_label.move(self.operations.image.size[0] + 160, 10)
+        self.modified_label.move(self.operations.image.size[0] + 60, 10)
         self.modified_label.show()
 
+        self.label_image.clear()
+        self.label_image.resize(self.operations.new_image.size[0], self.operations.new_image.size[1])
+        self.label_image.move(self.operations.image.size[0] + 60, 30)
         
-        label_image.move(self.operations.image.size[0] + 130, 30)
+        self.label_image.setPixmap(self.pixmap_image)
+        self.label_image.show()
         
-        label_image.setPixmap(self.pixmap_image)
-        label_image.show()
-        
-        self.main.resize(2*self.operations.image.size[0]+160, self.operations.image.size[1]+80)
+        self.main.resize(2*self.operations.image.size[0]+90, self.operations.image.size[1]+80)
         self.main.show()
+      
+    def _prepare_image(self):
+        pass
         
-    def display_horizontal_turn(self):
+    def _update_image(self):
+        pass
+      
+    def _horizontal_flip(self):
     
         if self.file == None or len(self.file) == 0:
             warning = QtGui.QMessageBox()
@@ -198,9 +217,9 @@ class MainWindow:
             self.operations.image = self.operations.new_image
             self.operations.image_pixels = self.operations.new_image_pixels
             new = ImageQt.ImageQt(self.operations.image)
-            self.show_image(new, self.original)
+            self._show_image(new, self.original)
         
-    def display_vertical_turn(self):
+    def _vertical_flip(self):
     
         if self.file == None or len(self.file) == 0:
             warning = QtGui.QMessageBox()
@@ -212,17 +231,15 @@ class MainWindow:
             self.operations.new_image = Image.open(str(self.file))
             self.operations.new_image_pixels = self.operations.new_image.load()
             
-            new_window = ImageDisplay()
-            new_window.display_image()
-            # self.operations.convolution()
+            self.operations.vertical_turn()
 
             # Updating the Image object with the new data
             self.operations.image = self.operations.new_image
             self.operations.image_pixels = self.operations.new_image_pixels
             new = ImageQt.ImageQt(self.operations.image)
-            self.show_image(new, self.original)
+            self._show_image(new, self.original)
 
-    def display_grayed_image(self):
+    def _grayscale(self):
     
         if self.file == None or len(self.file) == 0:
             warning = QtGui.QMessageBox()
@@ -240,11 +257,11 @@ class MainWindow:
             self.operations.image = self.operations.new_image
             self.operations.image_pixels = self.operations.new_image_pixels
             new = ImageQt.ImageQt(self.operations.image)
-            self.show_image(new, self.original)
+            self._show_image(new, self.original)
             
             self.gray_flag = True
 
-    def display_quantized_image(self):
+    def _quantization(self):
 
         if self.file == None or len(self.file) == 0:
             warning = QtGui.QMessageBox()
@@ -271,9 +288,161 @@ class MainWindow:
                 self.operations.image = self.operations.new_image
                 self.operations.image_pixels = self.operations.new_image_pixels
                 new = ImageQt.ImageQt(self.operations.image)
-                self.show_image(new, self.original)
+                self._show_image(new, self.original)
         
+    def _rotate_clockwise(self):
+        if self.file == None or len(self.file) == 0:
+            warning = QtGui.QMessageBox()
+            warning.setIcon(QtGui.QMessageBox.Critical)
+            warning.setText("You need to load an image first")
+            warning.exec_()
+        else:
+            # New Image objects to be updated
+            self.operations.new_image = Image.open(str(self.file))
+            self.operations.new_image_pixels = self.operations.new_image.load()
 
+            self.operations.right_turn()
+            
+            # Updating the Image object with the new data
+            self.operations.image = self.operations.new_image
+            self.operations.image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.image)
+            self._show_image(new, self.original)
+
+    def _rotate_counter_clockwise(self):
+        if self.file == None or len(self.file) == 0:
+            warning = QtGui.QMessageBox()
+            warning.setIcon(QtGui.QMessageBox.Critical)
+            warning.setText("You need to load an image first")
+            warning.exec_()
+        else:
+            # New Image objects to be updated
+            self.operations.new_image = Image.open(str(self.file))
+            self.operations.new_image_pixels = self.operations.new_image.load()
+
+            self.operations.left_turn()
+            
+            # Updating the Image object with the new data
+            self.operations.image = self.operations.new_image
+            self.operations.image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.image)
+            self._show_image(new, self.original)
+
+    def _adjust_brightness(self):
+        if self.file == None or len(self.file) == 0:
+            warning = QtGui.QMessageBox()
+            warning.setIcon(QtGui.QMessageBox.Critical)
+            warning.setText("You need to load an image first")
+            warning.exec_()
+        else:
+            # New Image objects to be updated
+            self.operations.new_image = Image.open(str(self.file))
+            self.operations.new_image_pixels = self.operations.new_image.load()
+
+            self.operations.adjust_brightness()
+            
+            # Updating the Image object with the new data
+            self.operations.image = self.operations.new_image
+            self.operations.image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.image)
+            self._show_image(new, self.original)
+
+    def _adjust_contrast(self):
+        if self.file == None or len(self.file) == 0:
+            warning = QtGui.QMessageBox()
+            warning.setIcon(QtGui.QMessageBox.Critical)
+            warning.setText("You need to load an image first")
+            warning.exec_()
+        else:
+            # New Image objects to be updated
+            self.operations.new_image = Image.open(str(self.file))
+            self.operations.new_image_pixels = self.operations.new_image.load()
+
+            self.operations.adjust_contrast()
+            
+            # Updating the Image object with the new data
+            self.operations.image = self.operations.new_image
+            self.operations.image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.image)
+            self._show_image(new, self.original)
+
+    def _negative(self):
+        if self.file == None or len(self.file) == 0:
+            warning = QtGui.QMessageBox()
+            warning.setIcon(QtGui.QMessageBox.Critical)
+            warning.setText("You need to load an image first")
+            warning.exec_()
+        else:
+            # New Image objects to be updated
+            self.operations.new_image = Image.open(str(self.file))
+            self.operations.new_image_pixels = self.operations.new_image.load()
+
+            self.operations.negative()
+            
+            # Updating the Image object with the new data
+            self.operations.image = self.operations.new_image
+            self.operations.image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.image)
+            self._show_image(new, self.original)
+
+    def _add_filter(self):
+        if self.file == None or len(self.file) == 0:
+            warning = QtGui.QMessageBox()
+            warning.setIcon(QtGui.QMessageBox.Critical)
+            warning.setText("You need to load an image first")
+            warning.exec_()
+        else:
+            # New Image objects to be updated
+            self.operations.new_image = Image.open(str(self.file))
+            self.operations.new_image_pixels = self.operations.new_image.load()
+
+            self.operations.convolution()
+            
+            # Updating the Image object with the new data
+            self.operations.image = self.operations.new_image
+            self.operations.image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.image)
+            self._show_image(new, self.original)
+
+    def _histogram(self):
+        if self.file == None or len(self.file) == 0:
+            warning = QtGui.QMessageBox()
+            warning.setIcon(QtGui.QMessageBox.Critical)
+            warning.setText("You need to load an image first")
+            warning.exec_()
+        else:
+            # New Image objects to be updated
+            self.operations.new_image = Image.open(str(self.file))
+            self.operations.new_image_pixels = self.operations.new_image.load()
+
+            self.operations.make_histogram()
+            
+            # Updating the Image object with the new data
+            self.operations.image = self.operations.new_image
+            self.operations.image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.image)
+            self._show_image(new, self.original)
+
+    def _equalize_histogram(self):
+        if self.file == None or len(self.file) == 0:
+            warning = QtGui.QMessageBox()
+            warning.setIcon(QtGui.QMessageBox.Critical)
+            warning.setText("You need to load an image first")
+            warning.exec_()
+        else:
+            # New Image objects to be updated
+            self.operations.new_image = Image.open(str(self.file))
+            self.operations.new_image_pixels = self.operations.new_image.load()
+
+            self.operations.histogram_equalization(self.operations.histogram)
+            
+            # Updating the Image object with the new data
+            self.operations.image = self.operations.new_image
+            self.operations.image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.image)
+            self._show_image(new, self.original)
+
+    
 class ImageDisplay:
     
     def __init__(self):
