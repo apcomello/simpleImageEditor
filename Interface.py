@@ -458,7 +458,7 @@ class MainWindow:
             # New Image objects to be updated
             self.operations.new_image = Image.open(str(self.file))
             self.operations.new_image_pixels = self.operations.new_image.load()
-    
+            self.operations.turn_gray()
             new_filter = Kernel()
             new_filter.display_input()
             
@@ -471,6 +471,7 @@ class MainWindow:
             self._show_image(new, self.original)
 
     def _histogram(self):
+        
         if self.file == None or len(self.file) == 0:
             warning = QtGui.QMessageBox()
             warning.setIcon(QtGui.QMessageBox.Critical)
@@ -478,11 +479,10 @@ class MainWindow:
             warning.exec_()
         else:
             # New Image objects to be updated
-            # self.operations.new_image = Image.open(str(self.file))
-            # self.operations.new_image_pixels = self.operations.new_image.load()
-
-            self.operations.make_histogram()
-            self._show_histogram()
+            self.operations.new_image = Image.open(str(self.file))
+            self.operations.new_image_pixels = self.operations.new_image.load()
+            current = self.operations.make_histogram()
+            self._show_histogram(current)
                     
     def _equalize_histogram(self):
         if self.file == None or len(self.file) == 0:
@@ -494,6 +494,7 @@ class MainWindow:
             # New Image objects to be updated
             self.operations.new_image = Image.open(str(self.file))
             self.operations.new_image_pixels = self.operations.new_image.load()
+            previous_histogram =  self.operations.make_histogram()
 
             self.operations.histogram_equalization(self.operations.histogram)
             
@@ -502,12 +503,12 @@ class MainWindow:
             self.operations.image_pixels = self.operations.new_image_pixels
             new = ImageQt.ImageQt(self.operations.image)
             self._show_image(new, self.original)
-            self.operations.make_histogram()
-            self._show_histogram()
+            current_histogram = self.operations.make_histogram()
+            self._show_histogram(previous_histogram, current_histogram)
 
-    def _show_histogram(self):
+    def _show_histogram(self, histogram, new_histogram=None):
         teste = HistogramDisplay()
-        teste.display_histogram(self.operations.normalized_histogram)
+        teste.display_histogram(histogram, new_histogram)
         
     def _zoom_in(self):
         if self.file == None or len(self.file) == 0:
@@ -557,7 +558,6 @@ class MainWindow:
             # New Image objects to be updated
             self.operations.new_image = Image.open(str(self.file))
             self.operations.new_image_pixels = self.operations.new_image.load()
-                
             self.operations.convolution([[0.0625, 0.125, 0.0625], [0.125, 0.25, 0.125], [0.0625, 0.125, 0.0625]])
             
             # Updating the Image object with the new data
@@ -691,22 +691,67 @@ class HistogramDisplay:
         self.w.resize(256, 256)
         self.w.setWindowTitle("Image histogram")
 
-    def display_histogram(self, histogram):
-        actual_label = QtGui.QLabel(self.w)
-        label = QtGui.QPixmap(256, 256)
-        label.fill()
-        histogram_display = QtGui.QPainter(label)
-        
-        histogram_display.setPen(QtCore.Qt.black)
-        
-        for i in range(256):
-            histogram_display.drawLine(i, 255, i, 256-histogram[i])
+    def display_histogram(self, histogram, equalized_histogram=None):
+        if equalized_histogram == None:
+            current_histogram = QtGui.QLabel(self.w)
+            current_histogram_pixmap = QtGui.QPixmap(256, 256)
+            current_histogram_pixmap.fill()
+            histogram_display = QtGui.QPainter(current_histogram_pixmap)
             
-        actual_label.setPixmap(label)
-        histogram_display.end()
-        
-        actual_label.show()
-        self.w.exec_()
+            histogram_display.setPen(QtCore.Qt.black)
+            
+            for i in range(256):
+                histogram_display.drawLine(i, 255, i, 256-histogram[i])
+                
+            current_histogram.setPixmap(current_histogram_pixmap)
+            histogram_display.end()
+            
+            current_histogram.show()
+            self.w.exec_()
+        else:
+            self.w.resize(532, 276)
+            
+            current_histogram_label = QtGui.QLabel(self.w)
+            previous_histogram_label = QtGui.QLabel(self.w)
+            
+            current_histogram_label.setText("Equalized histogram")
+            previous_histogram_label.setText("Original histogram")
+            
+            current_histogram_label.move(286, 260)
+            previous_histogram_label.move(10, 260)
+            current_histogram_label.show()
+            previous_histogram_label.show()
+            
+            current_histogram = QtGui.QLabel(self.w)
+            current_histogram_pixmap = QtGui.QPixmap(256, 256)
+            current_histogram_pixmap.fill()
+            current_histogram_display = QtGui.QPainter(current_histogram_pixmap)
+            
+            current_histogram_display.setPen(QtCore.Qt.black)
+            
+            for i in range(256):
+                current_histogram_display.drawLine(i, 255, i, 256-histogram[i])
+                
+            current_histogram.setPixmap(current_histogram_pixmap)
+            current_histogram_display.end()
+            
+            new_histogram = QtGui.QLabel(self.w)
+            new_histogram_pixmap = QtGui.QPixmap(256, 256)
+            new_histogram_pixmap.fill()
+            new_histogram_display = QtGui.QPainter(new_histogram_pixmap)
+            
+            new_histogram_display.setPen(QtCore.Qt.black)
+            
+            for i in range(256):
+                new_histogram_display.drawLine(i, 255, i, 256-equalized_histogram[i])
+                
+            new_histogram.setPixmap(new_histogram_pixmap)
+            new_histogram_display.end()
+            
+            new_histogram.move(276, 0)
+            current_histogram.show()
+            new_histogram.show()
+            self.w.exec_()
 
 class Kernel:
 
@@ -744,17 +789,3 @@ class Kernel:
 
         self.w.accept()
         
-class Slider:
-    def __init__(self):
-        pass
-    def display_input(self, min_value, max_value):
-        self.slider = QtGui.QSlider(QtCore.Qt.Horizontal, self.w)
-        self.slider.move(30, 10)
-        self.slider.setMinimum(min_value)
-        self.slider.setMaximum(max_value)
-        self.slider.setTickInterval(1)
-        self.slider.valueChanged.connect(self._set_coefficient)
-        self.w.exec_()
-        
-    def _set_coefficient(self):
-        self.coefficient = self.slider.value()

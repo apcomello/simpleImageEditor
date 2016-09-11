@@ -24,6 +24,7 @@ class Editor:
                 self.new_image_pixels[x,new_y] = self.image_pixels[x, y]
                 
     def turn_gray(self):
+    
         for x in range (0, self.image.size[0]):
             for y in range (0, self.image.size[1]):
                 
@@ -54,20 +55,21 @@ class Editor:
         self.histogram = [0] * 256
         self.normalized_histogram = [0] * 256
         biggest_column = 0
-        
+
+        self.turn_gray()
+                
         for x in range (0, self.image.size[0]):
             for y in range (0, self.image.size[1]):
-                shade = self.image_pixels[x, y][0]
+                shade = self.image_pixels[x, y][1]
                 self.histogram[shade] += 1
                 if self.histogram[shade] > biggest_column:
                     biggest_column = self.histogram[shade]
-
-        # for i in range(0, 255):
-            # if self.histogram[i] > biggest_column:
-                # biggest_column = self.histogram[i]
-
+                    
+                    
         for i in range(0, 255):
             self.normalized_histogram[i] = int(round( float(self.histogram[i]) / biggest_column * 255))
+            
+        return self.normalized_histogram
         
     def adjust_brightness(self, adjustment_coeficient):
         
@@ -129,21 +131,21 @@ class Editor:
 
     def histogram_equalization(self, histogram):
         
-        cumulative_histogram = [0] * 256
+        self.cumulative_histogram = [0] * 256
         num_pixels = self.image.size[0] * self.image.size[1]
         
         alpha = 255.0 / num_pixels
         
-        cumulative_histogram[0] = (histogram[0] * alpha)
+        self.cumulative_histogram[0] = (histogram[0] * alpha)
                 
         for i in range(1, 256):
-            cumulative_histogram[i] = (cumulative_histogram[i-1] + histogram[i] * alpha)
+            self.cumulative_histogram[i] = (self.cumulative_histogram[i-1] + histogram[i] * alpha)
                         
         for x in range (0, self.image.size[0]):
             for y in range (0, self.image.size[1]):
-                self.new_image_pixels[x, y] = (int(round(cumulative_histogram[self.image_pixels[x,y][0]])), 
-                                                        int(round(cumulative_histogram[self.image_pixels[x,y][0]])), 
-                                                        int(round(cumulative_histogram[self.image_pixels[x,y][0]])))
+                self.new_image_pixels[x, y] = (int(round(self.cumulative_histogram[self.image_pixels[x,y][0]])), 
+                                                        int(round(self.cumulative_histogram[self.image_pixels[x,y][1]])), 
+                                                        int(round(self.cumulative_histogram[self.image_pixels[x,y][2]])))
                 
     def right_turn(self):
         self.new_image = Image.new("RGBA", (self.image.size[1], self.image.size[0]))
@@ -180,7 +182,7 @@ class Editor:
                     conv_result = 0
                 if conv_result > 255:
                     conv_result = 255
-                self.new_image_pixels[i,n] = (int(round(conv_result)), int(round(conv_result)), int(round(conv_result)))
+                self.new_image_pixels[x,y] = (int(round(conv_result)), int(round(conv_result)), int(round(conv_result)))
                  
     def zoom_in(self):
         self.new_image = Image.new("RGBA", (2*self.image.size[0], 2*self.image.size[1]))
@@ -213,7 +215,7 @@ class Editor:
         zoom_factor_x = 2
         zoom_factor_y = 2
         
-        self.new_image = Image.new("RGBA", (self.image.size[0]/zoom_factor_x, self.image.size[1]/sy))
+        self.new_image = Image.new("RGBA", (self.image.size[0]/zoom_factor_x, self.image.size[1]/zoom_factor_y))
         self.new_image_pixels = self.new_image.load()
         
         for x in range(0, self.image.size[0], zoom_factor_x):
