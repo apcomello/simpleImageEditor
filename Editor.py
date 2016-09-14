@@ -185,7 +185,7 @@ class Editor:
                 self.new_image_pixels[x,y] = (int(round(conv_result)), int(round(conv_result)), int(round(conv_result)))
                  
     def zoom_in(self):
-        self.new_image = Image.new("RGBA", (2*self.image.size[0], 2*self.image.size[1]))
+        self.new_image = Image.new("RGBA", (2*self.image.size[0]-1, 2*self.image.size[1]-1))
         self.new_image_pixels = self.new_image.load()
 
         for x in range(0, self.image.size[0]-1):
@@ -193,46 +193,44 @@ class Editor:
                 
                 self.new_image_pixels[2*x, 2*y] = self.image_pixels[x, y]
                     
-                # if i % 2 == 0 and n % 2 != 0:
                 R_new_shade = int(round((self.image_pixels[x, y][0] + self.image_pixels[x+1,y][0])/2))
                 G_new_shade = int(round((self.image_pixels[x, y][1] + self.image_pixels[x+1,y][1])/2))
                 B_new_shade = int(round((self.image_pixels[x, y][2] + self.image_pixels[x+1,y][2])/2))
                 self.new_image_pixels[(2*x)+1,2*y] = (R_new_shade, G_new_shade, B_new_shade)
                 
-                # elif i % 2 != 0 and n % 2 == 0:
                 R_new_shade = int(round((self.image_pixels[x, y][0] + self.image_pixels[x, y+1][0])/2))
                 G_new_shade = int(round((self.image_pixels[x, y][1] + self.image_pixels[x, y+1][1])/2))
                 B_new_shade = int(round((self.image_pixels[x, y][2] + self.image_pixels[x, y+1][2])/2))
                 self.new_image_pixels[2*x,(2*y)+1] = (R_new_shade, G_new_shade, B_new_shade)
 
-                # elif i % 2 != 0 and n % 2 != 0:
                 R_new_shade = int(round((self.image_pixels[x, y][0] + self.image_pixels[x+1, y][0] + self.image_pixels[x, y+1][0] + self.image_pixels[x+1, y+1][0])/4))
                 G_new_shade = int(round((self.image_pixels[x, y][1] + self.image_pixels[x+1, y][1] + self.image_pixels[x, y+1][1] + self.image_pixels[x+1, y+1][1])/4))
                 B_new_shade = int(round((self.image_pixels[x, y][2] + self.image_pixels[x+1, y][2] + self.image_pixels[x, y+1][2] + self.image_pixels[x+1, y+1][2])/4))
                 self.new_image_pixels[(2*x)+1,(2*y)+1] = (R_new_shade, G_new_shade, B_new_shade)
-                    
-    def zoom_out(self):
-        zoom_factor_x = 2
-        zoom_factor_y = 2
-        
+                                    
+    def zoom_out(self, zoom_factor_x, zoom_factor_y):
+    
         self.new_image = Image.new("RGBA", (self.image.size[0]/zoom_factor_x, self.image.size[1]/zoom_factor_y))
         self.new_image_pixels = self.new_image.load()
+        
         
         for x in range(0, self.image.size[0], zoom_factor_x):
             for y in range(0, self.image.size[1], zoom_factor_y):
                 R_new_shade = 0
                 G_new_shade = 0
                 B_new_shade = 0
+                area_rectangle = 0
                 for j in range(0, zoom_factor_y):
                     for k in range(0, zoom_factor_x):
-                        try:
+                        if x+zoom_factor_y >= self.image.size[0] or y+zoom_factor_x >= self.image.size[1] :
+                            pass
+                        else:
                             R_new_shade += self.image_pixels[x+zoom_factor_y, y+zoom_factor_x][0]
                             G_new_shade += self.image_pixels[x+zoom_factor_y, y+zoom_factor_x][1]
                             B_new_shade += self.image_pixels[x+zoom_factor_y, y+zoom_factor_x][2]
-                        except:
-                            pass
-                        
-                R_new_shade = int(round(R_new_shade/(zoom_factor_y*zoom_factor_x)))
-                G_new_shade = int(round(G_new_shade/(zoom_factor_y*zoom_factor_x)))
-                B_new_shade = int(round(B_new_shade/(zoom_factor_y*zoom_factor_x)))
-                self.new_image_pixels[x/zoom_factor_x, y/zoom_factor_y] = (R_new_shade, G_new_shade, B_new_shade)
+                            area_rectangle += 1
+                if area_rectangle != 0:
+                    R_new_shade = int(round(R_new_shade/(area_rectangle)))
+                    G_new_shade = int(round(G_new_shade/(area_rectangle)))
+                    B_new_shade = int(round(B_new_shade/(area_rectangle)))
+                    self.new_image_pixels[x/zoom_factor_x, y/zoom_factor_y] = (R_new_shade, G_new_shade, B_new_shade)

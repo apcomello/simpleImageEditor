@@ -211,8 +211,11 @@ class MainWindow:
         
         if self.display_image.size[1] > self.operations.new_image.size[1]:
             self.main.resize(self.operations.new_image.size[0]+self.display_image.size[0]+90, self.display_image.size[1]+100)
+            self.info_label.move(self.operations.new_image.size[0]+self.display_image.size[0]-50, self.display_image.size[1] + 50)
         else:
             self.main.resize(self.operations.new_image.size[0]+self.display_image.size[0]+90, self.operations.new_image.size[1]+100)
+            self.info_label.move(self.operations.new_image.size[0]+self.display_image.size[0]-50, self.operations.new_image.size[1]+50)
+        self.info_label.show()
         self.main.show()
         
     def _prepare_image(self):
@@ -539,8 +542,11 @@ class MainWindow:
             # New Image objects to be updated
             self.operations.new_image = Image.open(str(self.file))
             self.operations.new_image_pixels = self.operations.new_image.load()
+            
+            factors = ZoomFactor()
+            factors.display_input()
 
-            self.operations.zoom_out()
+            self.operations.zoom_out(factors.zoom_factors[0], factors.zoom_factors[1])
             
             # Updating the Image object with the new data
             self.operations.image = self.operations.new_image
@@ -789,3 +795,41 @@ class Kernel:
 
         self.w.accept()
         
+class ZoomFactor:
+
+    def __init__(self):
+        self.w = QtGui.QDialog()
+        self.w.resize(150, 120)
+        self.w.setWindowTitle(" ")
+        self.zoom_factors = [None, None]
+        self.inputs = [None, None]
+        
+    def display_input(self):
+    
+        for i in range(2):
+                self.inputs[i] = QtGui.QLineEdit(self.w)
+                self.inputs[i].setValidator(QtGui.QIntValidator())
+                self.inputs[i].setMaximumWidth(30)
+                self.inputs[i].move(10, 30*i+10)
+            
+        horizontal_label = QtGui.QLabel(self.w)
+        horizontal_label.move(50, 10)
+        horizontal_label.setText("Horizontal factor")
+        horizontal_label.show()
+        
+        vertical_label = QtGui.QLabel(self.w)
+        vertical_label.move(50, 40)
+        vertical_label.setText("Vertical factor")
+        vertical_label.show()
+
+        
+        set_button = QtGui.QPushButton("Set zoom factors", self.w)
+        set_button.clicked.connect(self._set_factors)
+        set_button.move(10, 90)
+                
+        self.w.exec_()
+
+    def _set_factors(self):
+        for n in range(2):
+            self.zoom_factors[n] = int(self.inputs[n].text())
+        self.w.accept()
