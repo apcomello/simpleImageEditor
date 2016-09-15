@@ -1,35 +1,42 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from PyQt4 import QtGui, QtCore
 from PIL import Image, ImageQt
 import Editor
-import sys
-import random
 
 class MainWindow:
 
     def __init__(self):
+        # Interface
         self.main = QtGui.QMainWindow()
-        self.w = QtGui.QWidget()
-        self.main.setCentralWidget(self.w)
-        self.b = QtGui.QLabel(self.w)
-        self.original = None
-        self.display_image = None
-        self.image = None
-        self.pixel= None
-        self.new_pixel = None
-        self.image_copy = None
-        self.operations = Editor.Editor(self.image, self.image_copy, self.pixel, self.new_pixel)
+        self.main_widget = QtGui.QWidget()
+        self.main.setCentralWidget(self.main_widget)
         self.middle_y = 225
         self.pixmap_image = None
         self.pixmap_original = None
         self.previous_image = None
+        self.label_original = QtGui.QLabel(self.main_widget)
+        self.label_image = QtGui.QLabel(self.main_widget)
+        self.original_label = QtGui.QLabel(self.main_widget)
+        self.modified_label = QtGui.QLabel(self.main_widget)
+
+        # Image
+        self.original = None
+        self.display_image = None       # Copy to be used in the display
+        self.image = None
+        self.pixel= None
+        self.new_pixel = None
+        self.image_copy = None      # Copy to be modified
+        self.operations = Editor.Editor(self.image, self.image_copy, self.pixel, self.new_pixel)
+        
         self.file = None
         self.gray_flag = False
-        self.label_original = QtGui.QLabel(self.w)
-        self.label_image = QtGui.QLabel(self.w)
-        self.original_label = QtGui.QLabel(self.w)
-        self.modified_label = QtGui.QLabel(self.w)
 
     def create_main_window(self):
+        '''
+            Creates the basic layout of the interface
+        '''
         
         menu = self.main.menuBar()
         
@@ -111,7 +118,6 @@ class MainWindow:
         add_filter.addAction(add_prewitt_hy_action)
         add_filter.addAction(add_sobel_hx_action)
         add_filter.addAction(add_sobel_hy_action)
-
         
         transformations.addAction(add_custom_filter_action)
         transformations.addAction(adjust_brightness_action)
@@ -140,7 +146,7 @@ class MainWindow:
         zooms.addAction(zoom_in_action)
         zooms.addAction(zoom_out_action)
         
-        self.info_label = QtGui.QLabel(self.w)
+        self.info_label = QtGui.QLabel(self.main_widget)
         self.info_label.setText("Ana Paula Mello - 260723")
         self.info_label.move (360, 470)
       
@@ -151,17 +157,19 @@ class MainWindow:
             
     def load_file(self):
     
-        self.file = QtGui.QFileDialog.getOpenFileName(self.w, "Open file", filter="jpg (*.jpg *.)")
+        self.file = QtGui.QFileDialog.getOpenFileName(self.main_widget, "Open file", filter="jpg (*.jpg *.)")
         
-        if len(self.file) != 0:
+        if len(self.file) != 0:     # Doesn't do anything if no file was selected
        
-            self.operations.image = Image.open(str(self.file))
+            # Loads the image into the Editor
+            self.operations.original_image = Image.open(str(self.file))
             self.operations.new_image = Image.open(str(self.file))
-            self.operations.image_pixels = self.operations.image.load()
+            self.operations.original_image_pixels = self.operations.original_image.load()
             self.operations.new_image_pixels = self.operations.new_image.load()
                             
-            self.qim = ImageQt.ImageQt(self.operations.image)
-            self.original = ImageQt.ImageQt(self.operations.image)
+            # Turns the PIL object into a PyQt object in order to display it
+            self.qim = ImageQt.ImageQt(self.operations.original_image)
+            self.original = ImageQt.ImageQt(self.operations.original_image)
             self.display_image = Image.open(str(self.file))
             self.display_image_info = ImageQt.ImageQt(self.display_image)
           
@@ -174,8 +182,8 @@ class MainWindow:
             warning.setText("You need to load an image first")
             warning.exec_()
         else:
-            self.file = QtGui.QFileDialog.getSaveFileName(self.w, "Save file", "image.jpg", filter="jpg (*.jpg *.)")
-            self.operations.image.save(str(self.file))
+            self.file = QtGui.QFileDialog.getSaveFileName(self.main_widget, "Save file", "image.jpg", filter="jpg (*.jpg *.)")
+            self.operations.original_image.save(str(self.file))
         
     def _show_image(self, image, original):
                 
@@ -211,7 +219,7 @@ class MainWindow:
         self.label_image.show()
         
         if self.operations.new_image.size[0]+self.display_image.size[0]+90 >= 1000 and self.operations.new_image.size[1]+100 >= 900:
-            scroll = QtGui.QScrollArea(self.w)
+            scroll = QtGui.QScrollArea(self.main_widget)
             scroll.move(self.display_image.size[0] + 60, 30)
             scroll.setWidget(self.label_image)
             scroll.show()
@@ -227,12 +235,6 @@ class MainWindow:
         self.info_label.show()
         self.main.show()
         
-    def _prepare_image(self):
-        pass
-        
-    def _update_image(self):
-        pass
-      
     def _horizontal_flip(self):
     
         if self.file == None or len(self.file) == 0:
@@ -248,9 +250,9 @@ class MainWindow:
             self.operations.horizontal_flip()
             
             # Updating the Image object with the new data
-            self.operations.image = self.operations.new_image
-            self.operations.image_pixels = self.operations.new_image_pixels
-            new = ImageQt.ImageQt(self.operations.image)
+            self.operations.original_image = self.operations.new_image
+            self.operations.original_image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.original_image)
             self._show_image(new, self.original)
         
     def _vertical_flip(self):
@@ -268,9 +270,9 @@ class MainWindow:
             self.operations.vertical_flip()
 
             # Updating the Image object with the new data
-            self.operations.image = self.operations.new_image
-            self.operations.image_pixels = self.operations.new_image_pixels
-            new = ImageQt.ImageQt(self.operations.image)
+            self.operations.original_image = self.operations.new_image
+            self.operations.original_image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.original_image)
             self._show_image(new, self.original)
 
     def _grayscale(self):
@@ -288,9 +290,9 @@ class MainWindow:
             self.operations.turn_gray()
             
             # Updating the Image object with the new data
-            self.operations.image = self.operations.new_image
-            self.operations.image_pixels = self.operations.new_image_pixels
-            new = ImageQt.ImageQt(self.operations.image)
+            self.operations.original_image = self.operations.new_image
+            self.operations.original_image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.original_image)
             self._show_image(new, self.original)
             
             self.gray_flag = True
@@ -313,15 +315,15 @@ class MainWindow:
             self.operations.new_image = Image.open(str(self.file))
             self.operations.new_image_pixels = self.operations.new_image.load()
 
-            input, ok = QtGui.QInputDialog.getInt(self.w, "Number of shades", "Enter the number of shades you want in this image: ", value = 256, min=1, max=256)
+            input, ok = QtGui.QInputDialog.getInt(self.main_widget, "Number of shades", "Enter the number of shades you want in this image: ", value = 256, min=1, max=256)
             
             if ok:
                 self.operations.quantization(input)
                 
                 # Updating the Image object with the new data
-                self.operations.image = self.operations.new_image
-                self.operations.image_pixels = self.operations.new_image_pixels
-                new = ImageQt.ImageQt(self.operations.image)
+                self.operations.original_image = self.operations.new_image
+                self.operations.original_image_pixels = self.operations.new_image_pixels
+                new = ImageQt.ImageQt(self.operations.original_image)
                 self._show_image(new, self.original)
         
     def _rotate_clockwise(self):
@@ -338,9 +340,9 @@ class MainWindow:
             self.operations.right_turn()
             
             # Updating the Image object with the new data
-            self.operations.image = self.operations.new_image
-            self.operations.image_pixels = self.operations.new_image_pixels
-            new = ImageQt.ImageQt(self.operations.image)
+            self.operations.original_image = self.operations.new_image
+            self.operations.original_image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.original_image)
             self._show_image(new, self.original)
 
     def _rotate_counter_clockwise(self):
@@ -357,27 +359,31 @@ class MainWindow:
             self.operations.left_turn()
             
             # Updating the Image object with the new data
-            self.operations.image = self.operations.new_image
-            self.operations.image_pixels = self.operations.new_image_pixels
-            new = ImageQt.ImageQt(self.operations.image)
+            self.operations.original_image = self.operations.new_image
+            self.operations.original_image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.original_image)
             self._show_image(new, self.original)
 
     def _update_brightness(self):
-    
+        
+        # Uses the value from the slider to apply the transformations
         self.brightness_coefficient = self.slider.value()
         self.operations.adjust_brightness(self.brightness_coefficient)
         new = ImageQt.ImageQt(self.operations.new_image)
         self._show_image(new, self.original)
 
     def _set_brightness(self):
+    
+        # Sets a permanent value for the image
         self.slider.setParent(None)
         self.done_button.setParent(None)
-        self.operations.image = self.operations.new_image
-        self.operations.image_pixels = self.operations.new_image_pixels
-        new = ImageQt.ImageQt(self.operations.image)
+        self.operations.original_image = self.operations.new_image
+        self.operations.original_image_pixels = self.operations.new_image_pixels
+        new = ImageQt.ImageQt(self.operations.original_image)
         self._show_image(new, self.original)
 
     def _adjust_brightness(self):
+    
         if self.file == None or len(self.file) == 0:
             warning = QtGui.QMessageBox()
             warning.setIcon(QtGui.QMessageBox.Critical)
@@ -388,7 +394,7 @@ class MainWindow:
             self.operations.new_image = Image.open(str(self.file))
             self.operations.new_image_pixels = self.operations.new_image.load()
                         
-            self.slider = QtGui.QSlider(QtCore.Qt.Horizontal, self.w)            
+            self.slider = QtGui.QSlider(QtCore.Qt.Horizontal, self.main_widget)            
             self.slider.move(50, self.display_image.size[1]+50)
             self.slider.setMinimumWidth(255)
             self.slider.show()
@@ -403,20 +409,25 @@ class MainWindow:
             self.done_button.show()
 
     def _update_contrast(self):
+    
+        # Uses the value from the slider to apply the transformations
         self.contrast_coefficient = self.slider.value()
         self.operations.adjust_contrast(self.contrast_coefficient)
         new = ImageQt.ImageQt(self.operations.new_image)
         self._show_image(new, self.original)
 
     def _set_contrast(self):
+    
+        # Sets a permanent value for the image
         self.slider.setParent(None)
         self.done_button.setParent(None)
-        self.operations.image = self.operations.new_image
-        self.operations.image_pixels = self.operations.new_image_pixels
-        new = ImageQt.ImageQt(self.operations.image)
+        self.operations.original_image = self.operations.new_image
+        self.operations.original_image_pixels = self.operations.new_image_pixels
+        new = ImageQt.ImageQt(self.operations.original_image)
         self._show_image(new, self.original)
 
     def _adjust_contrast(self):
+    
         if self.file == None or len(self.file) == 0:
             warning = QtGui.QMessageBox()
             warning.setIcon(QtGui.QMessageBox.Critical)
@@ -427,7 +438,7 @@ class MainWindow:
             self.operations.new_image = Image.open(str(self.file))
             self.operations.new_image_pixels = self.operations.new_image.load()
                         
-            self.slider = QtGui.QSlider(QtCore.Qt.Horizontal, self.w)            
+            self.slider = QtGui.QSlider(QtCore.Qt.Horizontal, self.main_widget)            
             self.slider.move(50, self.display_image.size[1]+50)
             self.slider.setMinimumWidth(255)
             self.slider.show()
@@ -442,6 +453,7 @@ class MainWindow:
             self.done_button.show()
 
     def _negative(self):
+    
         if self.file == None or len(self.file) == 0:
             warning = QtGui.QMessageBox()
             warning.setIcon(QtGui.QMessageBox.Critical)
@@ -455,35 +467,10 @@ class MainWindow:
             self.operations.negative()
             
             # Updating the Image object with the new data
-            self.operations.image = self.operations.new_image
-            self.operations.image_pixels = self.operations.new_image_pixels
-            new = ImageQt.ImageQt(self.operations.image)
+            self.operations.original_image = self.operations.new_image
+            self.operations.original_image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.original_image)
             self._show_image(new, self.original)
-
-    def _add_custom_filter(self):
-        if self.file == None or len(self.file) == 0:
-            warning = QtGui.QMessageBox()
-            warning.setIcon(QtGui.QMessageBox.Critical)
-            warning.setText("You need to load an image first")
-            warning.exec_()
-        else:
-            # New Image objects to be updated
-            self.operations.new_image = Image.open(str(self.file))
-            self.operations.new_image_pixels = self.operations.new_image.load()
-            self.operations.turn_gray()
-            new_filter = Kernel()
-            new_filter.display_input()
-            
-            if new_filter.kernel[0][0] == None:
-                pass
-            else:
-                self.operations.convolution(new_filter.kernel)
-                
-                # Updating the Image object with the new data
-                self.operations.image = self.operations.new_image
-                self.operations.image_pixels = self.operations.new_image_pixels
-                new = ImageQt.ImageQt(self.operations.image)
-                self._show_image(new, self.original)
 
     def _histogram(self):
         
@@ -514,9 +501,9 @@ class MainWindow:
             self.operations.histogram_equalization(self.operations.histogram)
             
             # Updating the Image object with the new data
-            self.operations.image = self.operations.new_image
-            self.operations.image_pixels = self.operations.new_image_pixels
-            new = ImageQt.ImageQt(self.operations.image)
+            self.operations.original_image = self.operations.new_image
+            self.operations.original_image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.original_image)
             self._show_image(new, self.original)
             current_histogram = self.operations.make_histogram()
             self._show_histogram(previous_histogram, current_histogram)
@@ -539,9 +526,9 @@ class MainWindow:
             self.operations.zoom_in()
             
             # Updating the Image object with the new data
-            self.operations.image = self.operations.new_image
-            self.operations.image_pixels = self.operations.new_image_pixels
-            new = ImageQt.ImageQt(self.operations.image)
+            self.operations.original_image = self.operations.new_image
+            self.operations.original_image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.original_image)
             self._show_image(new, self.original)
 
     def _zoom_out(self):
@@ -558,7 +545,7 @@ class MainWindow:
             factors = ZoomFactor()
             factors.display_input()
 
-            if factors.zoom_factors[0] == None:
+            if factors.zoom_factors[0] == None:     # If no value was inputed
                 pass
             elif factors.zoom_factors[0] <= 0 or factors.zoom_factors[1] <= 0:
                 warning = QtGui.QMessageBox()
@@ -568,9 +555,35 @@ class MainWindow:
             else:
                 self.operations.zoom_out(factors.zoom_factors[0], factors.zoom_factors[1])
                 # Updating the Image object with the new data
-                self.operations.image = self.operations.new_image
-                self.operations.image_pixels = self.operations.new_image_pixels
-                new = ImageQt.ImageQt(self.operations.image)
+                self.operations.original_image = self.operations.new_image
+                self.operations.original_image_pixels = self.operations.new_image_pixels
+                new = ImageQt.ImageQt(self.operations.original_image)
+                self._show_image(new, self.original)
+
+    def _add_custom_filter(self):
+    
+        if self.file == None or len(self.file) == 0:
+            warning = QtGui.QMessageBox()
+            warning.setIcon(QtGui.QMessageBox.Critical)
+            warning.setText("You need to load an image first")
+            warning.exec_()
+        else:
+            # New Image objects to be updated
+            self.operations.new_image = Image.open(str(self.file))
+            self.operations.new_image_pixels = self.operations.new_image.load()
+            self.operations.turn_gray()
+            new_filter = Kernel()
+            new_filter.display_input()
+            
+            if new_filter.kernel[0][0] == None:     # If no input was added
+                pass
+            else:
+                self.operations.convolution(new_filter.kernel)
+                
+                # Updating the Image object with the new data
+                self.operations.original_image = self.operations.new_image
+                self.operations.original_image_pixels = self.operations.new_image_pixels
+                new = ImageQt.ImageQt(self.operations.original_image)
                 self._show_image(new, self.original)
 
     def _gaussian_filter(self):
@@ -586,9 +599,9 @@ class MainWindow:
             self.operations.convolution([[0.0625, 0.125, 0.0625], [0.125, 0.25, 0.125], [0.0625, 0.125, 0.0625]])
             
             # Updating the Image object with the new data
-            self.operations.image = self.operations.new_image
-            self.operations.image_pixels = self.operations.new_image_pixels
-            new = ImageQt.ImageQt(self.operations.image)
+            self.operations.original_image = self.operations.new_image
+            self.operations.original_image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.original_image)
             self._show_image(new, self.original)
 
     def _laplacian_filter(self):
@@ -605,9 +618,9 @@ class MainWindow:
             self.operations.convolution([[0, -1, 0], [-1, 4, -1], [0, -1, 0]])
             
             # Updating the Image object with the new data
-            self.operations.image = self.operations.new_image
-            self.operations.image_pixels = self.operations.new_image_pixels
-            new = ImageQt.ImageQt(self.operations.image)
+            self.operations.original_image = self.operations.new_image
+            self.operations.original_image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.original_image)
             self._show_image(new, self.original)
 
     def _generic_highpass_filter(self):
@@ -624,9 +637,9 @@ class MainWindow:
             self.operations.convolution([[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]])
             
             # Updating the Image object with the new data
-            self.operations.image = self.operations.new_image
-            self.operations.image_pixels = self.operations.new_image_pixels
-            new = ImageQt.ImageQt(self.operations.image)
+            self.operations.original_image = self.operations.new_image
+            self.operations.original_image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.original_image)
             self._show_image(new, self.original)
 
     def _prewitt_hx_filter(self):
@@ -643,9 +656,9 @@ class MainWindow:
             self.operations.convolution([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]])
             
             # Updating the Image object with the new data
-            self.operations.image = self.operations.new_image
-            self.operations.image_pixels = self.operations.new_image_pixels
-            new = ImageQt.ImageQt(self.operations.image)
+            self.operations.original_image = self.operations.new_image
+            self.operations.original_image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.original_image)
             self._show_image(new, self.original)
 
     def _prewitt_hy_filter(self):
@@ -662,9 +675,9 @@ class MainWindow:
             self.operations.convolution([[-1, -1, -1], [0, 0, 0], [1, 1, 1]])
             
             # Updating the Image object with the new data
-            self.operations.image = self.operations.new_image
-            self.operations.image_pixels = self.operations.new_image_pixels
-            new = ImageQt.ImageQt(self.operations.image)
+            self.operations.original_image = self.operations.new_image
+            self.operations.original_image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.original_image)
             self._show_image(new, self.original)
 
     def _sobel_hx_filter(self):
@@ -681,9 +694,9 @@ class MainWindow:
             self.operations.convolution([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
             
             # Updating the Image object with the new data
-            self.operations.image = self.operations.new_image
-            self.operations.image_pixels = self.operations.new_image_pixels
-            new = ImageQt.ImageQt(self.operations.image)
+            self.operations.original_image = self.operations.new_image
+            self.operations.original_image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.original_image)
             self._show_image(new, self.original)
 
     def _sobel_hy_filter(self):
@@ -700,31 +713,32 @@ class MainWindow:
             self.operations.convolution([[-1, -2, -1], [0, 0, 0], [1, 2, 1]])
             
             # Updating the Image object with the new data
-            self.operations.image = self.operations.new_image
-            self.operations.image_pixels = self.operations.new_image_pixels
-            new = ImageQt.ImageQt(self.operations.image)
+            self.operations.original_image = self.operations.new_image
+            self.operations.original_image_pixels = self.operations.new_image_pixels
+            new = ImageQt.ImageQt(self.operations.original_image)
             self._show_image(new, self.original)
-
-# class NewWindow:
-        # def __init__(self):
-        # self.w = QtGui.QDialog()
 
 class HistogramDisplay:
     
+    '''
+        Opens a new window and creates histograms from the given info
+    '''
     def __init__(self):
-        self.w = QtGui.QDialog()
-        self.w.resize(256, 256)
-        self.w.setWindowTitle("Image histogram")
+        self.main_widget = QtGui.QDialog()
+        self.main_widget.resize(256, 256)
+        self.main_widget.setWindowTitle("Image histogram")
 
     def display_histogram(self, histogram, equalized_histogram=None):
-        if equalized_histogram == None:
-            current_histogram = QtGui.QLabel(self.w)
+    
+        if equalized_histogram == None:     # Only one histogram to be displayed
+            current_histogram = QtGui.QLabel(self.main_widget)
             current_histogram_pixmap = QtGui.QPixmap(256, 256)
             current_histogram_pixmap.fill()
             histogram_display = QtGui.QPainter(current_histogram_pixmap)
             
             histogram_display.setPen(QtCore.Qt.black)
             
+            # Draws the histogram
             for i in range(256):
                 histogram_display.drawLine(i, 255, i, 256-histogram[i])
                 
@@ -732,12 +746,13 @@ class HistogramDisplay:
             histogram_display.end()
             
             current_histogram.show()
-            self.w.exec_()
-        else:
-            self.w.resize(532, 276)
+            self.main_widget.exec_()
             
-            current_histogram_label = QtGui.QLabel(self.w)
-            previous_histogram_label = QtGui.QLabel(self.w)
+        else:       # Two histograms to be displayes
+            self.main_widget.resize(532, 276)
+            
+            current_histogram_label = QtGui.QLabel(self.main_widget)
+            previous_histogram_label = QtGui.QLabel(self.main_widget)
             
             current_histogram_label.setText("Equalized histogram")
             previous_histogram_label.setText("Original histogram")
@@ -747,26 +762,28 @@ class HistogramDisplay:
             current_histogram_label.show()
             previous_histogram_label.show()
             
-            current_histogram = QtGui.QLabel(self.w)
+            current_histogram = QtGui.QLabel(self.main_widget)
             current_histogram_pixmap = QtGui.QPixmap(256, 256)
             current_histogram_pixmap.fill()
             current_histogram_display = QtGui.QPainter(current_histogram_pixmap)
             
             current_histogram_display.setPen(QtCore.Qt.black)
             
+            # Draws the histogram
             for i in range(256):
                 current_histogram_display.drawLine(i, 255, i, 256-histogram[i])
                 
             current_histogram.setPixmap(current_histogram_pixmap)
             current_histogram_display.end()
             
-            new_histogram = QtGui.QLabel(self.w)
+            new_histogram = QtGui.QLabel(self.main_widget)
             new_histogram_pixmap = QtGui.QPixmap(256, 256)
             new_histogram_pixmap.fill()
             new_histogram_display = QtGui.QPainter(new_histogram_pixmap)
             
             new_histogram_display.setPen(QtCore.Qt.black)
             
+            # Draws the histogram
             for i in range(256):
                 new_histogram_display.drawLine(i, 255, i, 256-equalized_histogram[i])
                 
@@ -776,82 +793,91 @@ class HistogramDisplay:
             new_histogram.move(276, 0)
             current_histogram.show()
             new_histogram.show()
-            self.w.exec_()
+            self.main_widget.exec_()
 
 class Kernel:
 
+    '''
+        Opens a window to get the input to set a new kernel  to use in the convolution operation
+    '''
     def __init__(self):
-        self.w = QtGui.QDialog()
-        self.w.resize(150, 180)
-        self.w.setWindowTitle(" ")
+        self.main_widget = QtGui.QDialog()
+        self.main_widget.resize(150, 180)
+        self.main_widget.setWindowTitle(" ")
         self.kernel = [[None, None, None], [None, None, None], [None, None, None]]
         self.inputs = [[None, None, None], [None, None, None], [None, None, None]]
         
     def display_input(self):
     
+        # Creates input forms
         for i in range(3):
             for n in range(3):
-                self.inputs[i][n] = QtGui.QLineEdit(self.w)
+                self.inputs[i][n] = QtGui.QLineEdit(self.main_widget)
                 self.inputs[i][n].setValidator(QtGui.QDoubleValidator(-0.001, 99.999, 3))
                 self.inputs[i][n].move(50*i+10, 30*n+50)
                 self.inputs[i][n].setMaximumWidth(30)
             
-        label = QtGui.QLabel(self.w)
+        label = QtGui.QLabel(self.main_widget)
         label.setText("Set your kernel values:")
         label.move(22, 20)
         
-        set_button = QtGui.QPushButton("Set filter", self.w)
+        set_button = QtGui.QPushButton("Set filter", self.main_widget)
         set_button.clicked.connect(self._set_kernel)
         set_button.move(38, 150)
                 
-        self.w.exec_()
+        self.main_widget.exec_()
 
     def _set_kernel(self):
         
         for i in range(3):
             for n in range(3):
-                if len(self.inputs[i][n].text()) == 0:
+                if len(self.inputs[i][n].text()) == 0: # No input was added
                     self.kernel[i][n] = 0.
                 else:
                     self.kernel[i][n] = float(self.inputs[i][n].text())
 
-        self.w.accept()
+        self.main_widget.accept()
         
 class ZoomFactor:
+    
+    '''
+        Opens a window to get the input to set the zoom out factors
+    '''
 
     def __init__(self):
-        self.w = QtGui.QDialog()
-        self.w.resize(150, 120)
-        self.w.setWindowTitle(" ")
+        self.main_widget = QtGui.QDialog()
+        self.main_widget.resize(150, 120)
+        self.main_widget.setWindowTitle(" ")
         self.zoom_factors = [None, None]
         self.inputs = [None, None]
         
     def display_input(self):
     
+        # Creates input forms
         for i in range(2):
-                self.inputs[i] = QtGui.QLineEdit(self.w)
+                self.inputs[i] = QtGui.QLineEdit(self.main_widget)
                 self.inputs[i].setValidator(QtGui.QIntValidator(1, 100))
                 self.inputs[i].setMaximumWidth(30)
                 self.inputs[i].move(10, 30*i+10)
             
-        horizontal_label = QtGui.QLabel(self.w)
+        horizontal_label = QtGui.QLabel(self.main_widget)
         horizontal_label.move(50, 10)
         horizontal_label.setText("Horizontal factor")
         horizontal_label.show()
         
-        vertical_label = QtGui.QLabel(self.w)
+        vertical_label = QtGui.QLabel(self.main_widget)
         vertical_label.move(50, 40)
         vertical_label.setText("Vertical factor")
         vertical_label.show()
 
         
-        set_button = QtGui.QPushButton("Set zoom factors", self.w)
+        set_button = QtGui.QPushButton("Set zoom factors", self.main_widget)
         set_button.clicked.connect(self._set_factors)
         set_button.move(10, 90)
                 
-        self.w.exec_()
+        self.main_widget.exec_()
 
     def _set_factors(self):
         for n in range(2):
             self.zoom_factors[n] = int(self.inputs[n].text())
-        self.w.accept()
+        self.main_widget.accept()
