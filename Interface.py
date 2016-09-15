@@ -144,14 +144,14 @@ class MainWindow:
         self.info_label.setText("Ana Paula Mello - 260723")
         self.info_label.move (360, 470)
       
-        self.main.resize(500, 510)
+        self.main.setFixedSize(500, 510)
         self.main.move(100, 100)
         self.main.setWindowTitle("Image Operations")
         self.main.show()
             
     def load_file(self):
     
-        self.file = QtGui.QFileDialog.getOpenFileName(self.w, "Open file")
+        self.file = QtGui.QFileDialog.getOpenFileName(self.w, "Open file", filter="jpg (*.jpg *.)")
         
         if len(self.file) != 0:
        
@@ -178,7 +178,7 @@ class MainWindow:
             self.operations.image.save(str(self.file))
         
     def _show_image(self, image, original):
-        
+                
         self.original_label.setText("Original image")
         self.modified_label.setText("Modified image")
    
@@ -205,16 +205,25 @@ class MainWindow:
         self.label_image.clear()
         self.label_image.resize(self.operations.new_image.size[0], self.operations.new_image.size[1])
         self.label_image.move(self.display_image.size[0] + 60, 30)
+
         
         self.label_image.setPixmap(self.pixmap_image)
         self.label_image.show()
         
-        if self.display_image.size[1] > self.operations.new_image.size[1]:
-            self.main.resize(self.operations.new_image.size[0]+self.display_image.size[0]+90, self.display_image.size[1]+100)
+        if self.operations.new_image.size[0]+self.display_image.size[0]+90 >= 1000 and self.operations.new_image.size[1]+100 >= 900:
+            scroll = QtGui.QScrollArea(self.w)
+            scroll.move(self.display_image.size[0] + 60, 30)
+            scroll.setWidget(self.label_image)
+            scroll.show()
+            self.main.setFixedSize(900, 400)
+            self.info_label.move(760, 350)
+        elif self.display_image.size[1] > self.operations.new_image.size[1]:
+            self.main.setFixedSize(self.operations.new_image.size[0]+self.display_image.size[0]+90, self.display_image.size[1]+100)
             self.info_label.move(self.operations.new_image.size[0]+self.display_image.size[0]-50, self.display_image.size[1] + 50)
         else:
-            self.main.resize(self.operations.new_image.size[0]+self.display_image.size[0]+90, self.operations.new_image.size[1]+100)
+            self.main.setFixedSize(self.operations.new_image.size[0]+self.display_image.size[0]+90, self.operations.new_image.size[1]+100)
             self.info_label.move(self.operations.new_image.size[0]+self.display_image.size[0]-50, self.operations.new_image.size[1]+50)
+
         self.info_label.show()
         self.main.show()
         
@@ -465,13 +474,16 @@ class MainWindow:
             new_filter = Kernel()
             new_filter.display_input()
             
-            self.operations.convolution(new_filter.kernel)
-            
-            # Updating the Image object with the new data
-            self.operations.image = self.operations.new_image
-            self.operations.image_pixels = self.operations.new_image_pixels
-            new = ImageQt.ImageQt(self.operations.image)
-            self._show_image(new, self.original)
+            if new_filter.kernel[0][0] == None:
+                pass
+            else:
+                self.operations.convolution(new_filter.kernel)
+                
+                # Updating the Image object with the new data
+                self.operations.image = self.operations.new_image
+                self.operations.image_pixels = self.operations.new_image_pixels
+                new = ImageQt.ImageQt(self.operations.image)
+                self._show_image(new, self.original)
 
     def _histogram(self):
         
@@ -546,13 +558,20 @@ class MainWindow:
             factors = ZoomFactor()
             factors.display_input()
 
-            self.operations.zoom_out(factors.zoom_factors[0], factors.zoom_factors[1])
-            
-            # Updating the Image object with the new data
-            self.operations.image = self.operations.new_image
-            self.operations.image_pixels = self.operations.new_image_pixels
-            new = ImageQt.ImageQt(self.operations.image)
-            self._show_image(new, self.original)
+            if factors.zoom_factors[0] == None:
+                pass
+            elif factors.zoom_factors[0] <= 0 or factors.zoom_factors[1] <= 0:
+                warning = QtGui.QMessageBox()
+                warning.setIcon(QtGui.QMessageBox.Critical)
+                warning.setText("Your factors need to be bigger than 0")
+                warning.exec_()
+            else:
+                self.operations.zoom_out(factors.zoom_factors[0], factors.zoom_factors[1])
+                # Updating the Image object with the new data
+                self.operations.image = self.operations.new_image
+                self.operations.image_pixels = self.operations.new_image_pixels
+                new = ImageQt.ImageQt(self.operations.image)
+                self._show_image(new, self.original)
 
     def _gaussian_filter(self):
         if self.file == None or len(self.file) == 0:
@@ -773,7 +792,7 @@ class Kernel:
         for i in range(3):
             for n in range(3):
                 self.inputs[i][n] = QtGui.QLineEdit(self.w)
-                self.inputs[i][n].setValidator(QtGui.QIntValidator())
+                self.inputs[i][n].setValidator(QtGui.QDoubleValidator(-0.001, 99.999, 3))
                 self.inputs[i][n].move(50*i+10, 30*n+50)
                 self.inputs[i][n].setMaximumWidth(30)
             
@@ -791,7 +810,10 @@ class Kernel:
         
         for i in range(3):
             for n in range(3):
-                self.kernel[i][n] = int(self.inputs[i][n].text())
+                if len(self.inputs[i][n].text()) == 0:
+                    self.kernel[i][n] = 0.
+                else:
+                    self.kernel[i][n] = float(self.inputs[i][n].text())
 
         self.w.accept()
         
@@ -808,7 +830,7 @@ class ZoomFactor:
     
         for i in range(2):
                 self.inputs[i] = QtGui.QLineEdit(self.w)
-                self.inputs[i].setValidator(QtGui.QIntValidator())
+                self.inputs[i].setValidator(QtGui.QIntValidator(1, 100))
                 self.inputs[i].setMaximumWidth(30)
                 self.inputs[i].move(10, 30*i+10)
             
