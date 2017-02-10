@@ -1,6 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+#===============================================
+# Author: Ana Paula Mello       apcomello@gmail.com
+# Date: September 2016
+# Project for INF1046 - Fundamentos de Processamento de Imagens
+# UFRGS - Departamento de Informática
+# Version 1.2
+#===============================================
+
+__author__ = "Ana Paula Mello"
+__email__ = "apcomello@gmail.com"
+__version__ = "1.2"
+
 from PIL import Image, ImageQt
 from math import floor    
 
